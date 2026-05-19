@@ -10,7 +10,6 @@ import {
   getCredStorage,
   persistCliAuthConfig,
   readCredentials,
-  resolveEffectiveCredStorage,
   type Credentials,
   CredentialsStore,
   readGlobalConfig,
@@ -234,56 +233,6 @@ describe('CredentialsStore', () => {
         credStorage: 'auto',
       })
     ).toBe('auto');
-  });
-
-  test('resolveEffectiveCredStorage returns explicit file storage', () => {
-    expect(
-      resolveEffectiveCredStorage(createConfigDir(), {
-        credStorage: 'file',
-      })
-    ).toBe('file');
-  });
-
-  test('resolveEffectiveCredStorage returns explicit keyring storage', () => {
-    keyringState.failConstruct = true;
-
-    expect(
-      resolveEffectiveCredStorage(createConfigDir(), {
-        credStorage: 'keyring',
-      })
-    ).toBe('keyring');
-  });
-
-  test('resolveEffectiveCredStorage defaults to file when unset', () => {
-    expect(resolveEffectiveCredStorage(createConfigDir())).toBe('file');
-  });
-
-  test('resolveEffectiveCredStorage resolves auto to keyring when available', () => {
-    expect(
-      resolveEffectiveCredStorage(createConfigDir(), {
-        credStorage: 'auto',
-      })
-    ).toBe('keyring');
-  });
-
-  test('resolveEffectiveCredStorage resolves auto to file when keyring is unavailable', () => {
-    keyringState.failConstruct = true;
-
-    expect(
-      resolveEffectiveCredStorage(createConfigDir(), {
-        credStorage: 'auto',
-      })
-    ).toBe('file');
-  });
-
-  test('resolveEffectiveCredStorage prefers explicit credStorage over VERCEL_TOKEN_STORAGE', () => {
-    vi.stubEnv('VERCEL_TOKEN_STORAGE', 'file');
-
-    expect(
-      resolveEffectiveCredStorage(createConfigDir(), {
-        credStorage: 'keyring',
-      })
-    ).toBe('keyring');
   });
 
   test('rejects invalid credStorage from global config.json', () => {

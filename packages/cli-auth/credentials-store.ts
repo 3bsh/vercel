@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import assert from 'node:assert';
 import * as cliConfig from '@vercel/cli-config';
 import type {
   AuthConfig as SharedAuthConfig,
@@ -75,13 +76,14 @@ function parseCredStorage(value: unknown, source: string): CredStorage {
 
   try {
     const config = cliConfig.parseGlobalConfig({ credStorage: value });
-
-    if (config.credStorage) {
-      return config.credStorage;
-    }
-  } catch {}
-
-  throw new Error(formatCredStorageError(value, source));
+    assert(
+      config.credStorage !== undefined,
+      'expected credStorage value to be non-empty'
+    );
+    return config.credStorage;
+  } catch {
+    throw new Error(formatCredStorageError(value, source));
+  }
 }
 
 export function resolveCredStorage(value: unknown): CredStorage {
@@ -150,27 +152,14 @@ export function getCredStorage(
   return resolveCliAuthConfig(dir, config).credStorage;
 }
 
-export function resolveEffectiveCredStorage(
-  dir: string,
-  config?: GlobalConfig
-): CredentialsStorageLocation {
-  const cliAuthConfig = resolveCliAuthConfig(dir, config);
-
-  switch (cliAuthConfig.credStorage) {
-    case 'file':
-      return 'file';
-    case 'keyring':
-      return 'keyring';
-    case 'auto':
-      try {
-        createKeyringEntry(cliConfig.getAuthConfigFilePath(dir), cliAuthConfig);
-        return 'keyring';
-      } catch {
-        return 'file';
-      }
-  }
-}
-
+/** Return an account key suitable for use in keyrings for a given configPath.
+ *
+ *  `auth.json` and the keychain are supposed to be equivalent and exchangeable.
+ * Since file-based credentials storage is configurable (via config path),
+ * we must ensure that keyring entries are keyed by config path also.  We cannot
+ * use the full path as the key, so use a 16-byte prefix of sha256 hash of
+ * the path.
+ */
 function getKeyringAccount(configPath: string): string {
   const digest = createHash('sha256').update(configPath).digest('hex');
   return `cli:${digest.slice(0, 16)}`;
