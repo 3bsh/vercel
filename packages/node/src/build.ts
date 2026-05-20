@@ -432,6 +432,7 @@ export const build = async ({
   repoRootPath,
   config = {},
   meta = {},
+  service,
   considerBuildCommand = false,
   entrypointCallback,
   checks = () => {},
@@ -719,6 +720,8 @@ export const build = async ({
       cliType,
       lockfilePath,
       lockfileVersion,
+      framework: config.framework ?? undefined,
+      serviceType: service?.type,
     });
   } catch (err) {
     debug(
